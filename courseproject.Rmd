@@ -1,0 +1,108 @@
+---
+title: 'Statistical Interference: Course Project'
+author: "Ulrich Tiedau"
+date: "Monday, February 16, 2015"
+output:
+  pdf_document: default
+  html_document: 
+    keep_md: yes
+fontsize: 10pt
+geometry: margin=0.6in
+---
+
+# Overview
+This project illustrates the properties of the exponential distribution of the mean of 40 exponentials and compares it with the Central Limit Theorem. In particular it 1) shows the sample mean and compares it to the theoretical mean of the distribution; 2) shows how variable the sample is (via variance) and compares it to the theoretical variance of the distribution; and 3) shows that the distribution is approximately normal.
+
+# Part 1: Simulations
+First we define a function for running the simulations with the arguments defaulting to the values set in the assignment ($\lambda$ = 0.2, sample size = 40 and number of simulations = 1000). The function simulates the exponential distribution with the R expression ```rexp(nexp, lambda)``` and returns a vector with the sample data. Then we run the simulations and plot a historgram which shows that the distribution is  fairly close to normal, although slightly skewed, with the sample mean being very close to the theoretical mean as we will investigate next:
+```{r echo=TRUE}
+run.simulations <- function (nexp = 40, lambda = 0.2, nsim = 1000) {
+  v <- vector()
+  for (i in 1 : nsim) v[i] <- mean(rexp(nexp, lambda))
+  return(v)
+  }
+set.seed(1000)
+dat <- run.simulations()
+```
+```{r echo=FALSE}
+figure <- function(x, breaks, main=main, xlab=xlab, nexp=40) {
+  par(cex.main=0.9, cex.lab=0.8)
+  hist(x, breaks=breaks, main=main, xlab="Exponential distribution (lambda=0.2)")
+  abline(v = mean(x), col="red", lwd=2)
+  abline(v = 1/0.2, col="blue", lwd=2)
+  #lines(density(ms), col="red", lwd=2)
+  #curve(dnorm(x, d.mean, d.sd/sqrt(ss)), min(ms), max(ms), col="purple", add=T, lty=2, lwd=3)
+  curve(dnorm(x, mean(x), sd(x)/sqrt(nexp)), col="red", lwd=2, add=TRUE)
+  curve(dnorm(x, mean=5, sd=5), col="blue", lwd=2, add=TRUE)
+  #rug(quantile(dat), col=2, lwd=2)
+  legend("topright", c("Theoretical Mean", "Sample Mean"),
+    col=c("blue", "red"), lty=c(1, 1), lwd=c(2, 2), cex=0.5)
+  }
+
+figure(dat, breaks=20, main="Exponential distribution (sample size 40)")
+``` 
+
+# Part 2: Sample Mean versus Theoretical Mean
+Both the mean and the standard deviation of the exponential distribution are `1/lambda`. As in this experiment the rate parameter for all simulations is set as `lambda = 0.2`, this means that the theoretical mean is 5.0 and the theoretical standard deviation 5.0 as well. Comparing the sample mean (`r mean.sample`) with the theoretical mean (5.0), we see that it differs by only `r round((1-mean.sample/mean.theoretical)*100, digits=2)`%.
+
+```{r echo=TRUE}
+lambda <- 0.2
+mean.theoretical <- 1/lambda
+mean.sample <- mean(dat)
+```
+
+# Part 3: Sample Variance versus Theoretical Variance
+Next we investigate the variance or the distribution. It turns out that the sample variance (`r variance.sample`) differs significantly more from the theoretical variance (`r variance.theoretical`), namely `r abs(round((1-variance.sample/variance.theoretical) * 100, digits=2))`%.
+```{r echo=TRUE}
+variance.theoretical <- ((1/lambda)^2)/nexp
+variance.sample <- var(dat)
+```
+
+# Part 4: Distribution
+To see whether the distribution confirms with the Central Limit Theorem (for our purposes here stating that the distribution of averages of iid variables (properly normalized) becomes that of a standard normal as the sample size increases and approximates normality), we run a second simulation with an increases sample size of 1000 and compare the two histograms:
+```{r echo=TRUE}
+par(mfrow=c(1, 2))
+figure(dat, 20, main="Sample size 40")
+dat2 <- run.simulations(nexp=1000); figure(dat2, 20, main="Sample size 1000")
+```
+
+As we can see, the second simulation with the increased sample size of 1000 approximates normality even closer than the first simulation with a sample size of 40. The distribution thus confirms with the Central Limit Theorem (CLT). To further verify this finding we plot the theoretical against the sample quantiles in a QQ-Plot which allows to inspect how closely the data fits the chosen theoretical distribution:
+
+```{r echo=FALSE, warning=FALSE}
+par(mfrow=c(1, 2),  mar=c(1, 1, 1, 1), cex.main=0.9, cex.lab=0.8)
+qqnorm(dat, main = "QQ-Plot (sample size 40)", xlab = "Theoretical Quantiles",
+  ylab = "Sample Quantiles", plot.it = TRUE, datax = FALSE)
+qqline(dat, col="red")
+qqnorm(dat2, main = "QQ-Plot (sample size 1000)", xlab = "Theoretical Quantiles",
+  ylab = "Sample Quantiles", plot.it = TRUE, datax = FALSE)
+qqline(dat2, col="blue")
+```
+
+As the quantile follow the line closely, we can conclude that the exponential distribution of the mean of 40 exponentials approximates a normal distribution. The fact that it does so even more closely for the mean of 1000 exponentials is another confirmation that the exponential distribution confirms with the Central Limit Theorem.
+
+#5. Appendix
+## 5.1 Code used to generate the plots
+```{r echo=TRUE, eval=FALSE}
+figure <- function(x, breaks, main, xlab) {
+  hist(x, breaks=breaks, main=main, xlab="Exponential distribution (lambda=0.2)")
+  abline(v = mean(x), col="red", lwd=2)
+  abline(v = 1/0.2, col="blue", lwd=2)
+  curve(dnorm(x, mean(x), sd(x)), col="red", lwd=2, add=TRUE)
+  curve(dnorm(x, mean=5, sd=5), col="blue", lwd=2, add=TRUE)
+  rug(quantile(dat), col=2, lwd=2)
+  legend("topright", c("Theoretical Mean", "Sample Mean"),
+    col=c("blue", "red"), lty=c(1, 1), lwd=c(2, 2), cex=0.5)
+  }
+
+figure(dat, 20, main="Exponential distribution (sample size 40)")
+```
+## 5.2 Code used to generate the QQ-plots
+```{r echo=TRUE, eval=FALSE}
+par(mfrow=c(2, 1))
+qqnorm(dat, main = "QQ-Plot (sample size 40)", xlab = "Theoretical Quantiles",
+  ylab = "Sample Quantiles", plot.it = TRUE, datax = FALSE)
+qqline(dat, col="red")
+qqnorm(dat2, main = "QQ-Plot (sample size 1000)", xlab = "Theoretical Quantiles",
+  ylab = "Sample Quantiles", plot.it = TRUE, datax = FALSE)
+qqline(dat2, col="blue")
+```
